@@ -2,9 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { JournalEntry } from "../types";
 
-// FIX: Initialize the GoogleGenAI client. The API key is automatically sourced from process.env.API_KEY.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-
 // FIX: Define the JSON schema for the expected response from the Gemini API.
 const insightsSchema = {
     type: Type.OBJECT,
@@ -33,7 +30,12 @@ const insightsSchema = {
 };
 
 
-export const analyzeJournalEntry = async (entryText: string): Promise<Partial<JournalEntry> | null> => {
+export const analyzeJournalEntry = async (apiKey: string, entryText: string): Promise<Partial<JournalEntry> | null> => {
+    if (!apiKey) {
+        throw new Error("API key is missing.");
+    }
+    const ai = new GoogleGenAI({ apiKey });
+
     const prompt = `
         Analyze the following journal entry. Act as a compassionate and insightful wellness coach. 
         Your goal is to provide supportive and constructive feedback. 
@@ -45,9 +47,8 @@ export const analyzeJournalEntry = async (entryText: string): Promise<Partial<Jo
     `;
 
     try {
-        // FIX: Use the correct method to generate content with a JSON response.
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash', // Using a fast and capable model for this task.
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -56,7 +57,6 @@ export const analyzeJournalEntry = async (entryText: string): Promise<Partial<Jo
             },
         });
         
-        // FIX: Access the text response directly and parse it.
         const text = response.text;
         if (text) {
              const parsedJson = JSON.parse(text);
@@ -84,7 +84,12 @@ const suggestionsSchema = {
     required: ["suggestions"],
 };
 
-export const getWellnessSuggestions = async (entryText: string): Promise<string[] | null> => {
+export const getWellnessSuggestions = async (apiKey: string, entryText: string): Promise<string[] | null> => {
+    if (!apiKey) {
+        throw new Error("API key is missing.");
+    }
+    const ai = new GoogleGenAI({ apiKey });
+
     const prompt = `
         You are a friendly and caring wellness advisor.
         Based on the following journal entry, provide 3-5 personalized and actionable wellness tips.

@@ -12,12 +12,15 @@ import { MenuIcon } from './components/icons/MenuIcon';
 import { CloseIcon } from './components/icons/CloseIcon';
 import SuggestionsModal from './components/SuggestionsModal';
 import PositiveVibesToast from './components/PositiveVibesToast';
+import ApiKeyModal from './components/ApiKeyModal';
 
 const App: React.FC = () => {
     const [entries, setEntries] = useState<{ [date: string]: JournalEntry }>({});
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [apiKey, setApiKey] = useState<string>('');
+    const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
     const [theme, setTheme] = useState<ThemeName>(() => {
         return (localStorage.getItem('journal-theme') as ThemeName) || 'moon-night';
     });
@@ -27,6 +30,8 @@ const App: React.FC = () => {
 
     useEffect(() => {
         setEntries(loadEntries());
+        const savedApiKey = localStorage.getItem('gemini-api-key') || '';
+        setApiKey(savedApiKey);
     }, []);
 
     useEffect(() => {
@@ -37,11 +42,18 @@ const App: React.FC = () => {
         const root = document.documentElement;
         const themeColors = THEMES[theme].colors;
         for (const [key, value] of Object.entries(themeColors)) {
-            // FIX: Explicitly cast value to string as Object.entries can produce an 'unknown' type.
             root.style.setProperty(key, value as string);
         }
         localStorage.setItem('journal-theme', theme);
     }, [theme]);
+
+    const handleSaveApiKey = (key: string) => {
+        if (key) {
+            setApiKey(key);
+            localStorage.setItem('gemini-api-key', key);
+            setIsApiKeyModalOpen(false);
+        }
+    };
 
     const handleDateChange = (date: Date) => {
         setSelectedDate(date);
@@ -89,13 +101,17 @@ const App: React.FC = () => {
     }, [selectedDateKey, currentEntry]);
 
     const handleGenerateInsights = async () => {
+        if (!apiKey) {
+            setIsApiKeyModalOpen(true);
+            return;
+        }
         if (!currentEntry.text) {
             alert('Please write something in your journal before generating insights.');
             return;
         }
         setIsAiLoading(true);
         try {
-            const insights = await analyzeJournalEntry(currentEntry.text);
+            const insights = await analyzeJournalEntry(apiKey, currentEntry.text);
             if (insights) {
                 setEntries(prev => ({
                     ...prev,
@@ -107,13 +123,17 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error("Error generating insights:", error);
-            alert("Sorry, there was an error generating insights. Please try again.");
+            alert("Sorry, there was an error generating insights. Please check your API key and try again.");
         } finally {
             setIsAiLoading(false);
         }
     };
     
     const handleGetSuggestions = async () => {
+        if (!apiKey) {
+            setIsApiKeyModalOpen(true);
+            return;
+        }
         if (!currentEntry.text) {
             alert('Please write something in your journal first.');
             return;
@@ -122,13 +142,13 @@ const App: React.FC = () => {
         setIsSuggestionsLoading(true);
         setSuggestions([]); // Clear old suggestions
         try {
-            const tips = await getWellnessSuggestions(currentEntry.text);
+            const tips = await getWellnessSuggestions(apiKey, currentEntry.text);
             if (tips) {
                 setSuggestions(tips);
             }
         } catch (error) {
             console.error("Error getting suggestions:", error);
-            alert("Sorry, there was an error getting suggestions. Please try again.");
+            alert("Sorry, there was an error getting suggestions. Please check your API key and try again.");
             setIsSuggestionsModalOpen(false); 
         } finally {
             setIsSuggestionsLoading(false);
@@ -197,6 +217,8 @@ const App: React.FC = () => {
                                 isLoading={isAiLoading}
                                 onGetSuggestions={handleGetSuggestions}
                                 isSuggestionsLoading={isSuggestionsLoading}
+                                apiKey={apiKey}
+                                onSetApiKey={() => setIsApiKeyModalOpen(true)}
                             />
                         </div>
                     </div>
@@ -208,6 +230,11 @@ const App: React.FC = () => {
                 onClose={handleCloseModal}
                 suggestions={suggestions}
                 isLoading={isSuggestionsLoading}
+            />
+            <ApiKeyModal
+                isOpen={isApiKeyModalOpen}
+                onClose={() => setIsApiKeyModalOpen(false)}
+                onSave={handleSaveApiKey}
             />
         </div>
     );

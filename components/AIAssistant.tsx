@@ -7,6 +7,7 @@ import { HeartIcon } from './icons/HeartIcon';
 import { QUOTES, WRITING_PROMPTS } from '../constants';
 import { QuoteIcon } from './icons/QuoteIcon';
 import { LightbulbIcon } from './icons/LightbulbIcon';
+import { KeyIcon } from './icons/KeyIcon';
 
 interface AIAssistantProps {
     entry: JournalEntry;
@@ -14,10 +15,12 @@ interface AIAssistantProps {
     isLoading: boolean;
     onGetSuggestions: () => void;
     isSuggestionsLoading: boolean;
+    apiKey: string;
+    onSetApiKey: () => void;
 }
 
-const AIAssistant: React.FC<AIAssistantProps> = ({ entry, onGenerate, isLoading, onGetSuggestions, isSuggestionsLoading }) => {
-    const { summary, positive_aspects, areas_for_reflection, key_takeaways } = entry;
+const AIAssistant: React.FC<AIAssistantProps> = ({ entry, onGenerate, isLoading, onGetSuggestions, isSuggestionsLoading, apiKey, onSetApiKey }) => {
+    const { summary } = entry;
     const hasInsights = !!summary;
     const isButtonDisabled = isLoading || isSuggestionsLoading || !entry.text;
 
@@ -37,7 +40,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ entry, onGenerate, isLoading,
                 <div className="flex items-center gap-2">
                      <button
                         onClick={onGetSuggestions}
-                        disabled={isButtonDisabled}
+                        disabled={isButtonDisabled || !apiKey}
+                        title={!apiKey ? 'Set your API Key to enable suggestions' : ''}
                         className="flex items-center gap-2 text-brand-primary font-semibold py-2 px-4 rounded-lg transition-all duration-300 border-2 border-brand-primary hover:bg-brand-primary/10 disabled:border-brand-primary/50 disabled:text-brand-primary/50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary focus:ring-offset-brand-surface"
                     >
                         <HeartIcon />
@@ -45,7 +49,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ entry, onGenerate, isLoading,
                     </button>
                     <button
                         onClick={onGenerate}
-                        disabled={isButtonDisabled}
+                        disabled={isButtonDisabled || !apiKey}
+                        title={!apiKey ? 'Set your API Key to enable insights' : ''}
                         className="flex items-center gap-2 bg-brand-primary text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 hover:bg-brand-primary-hover disabled:bg-brand-primary/50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary focus:ring-offset-brand-surface"
                     >
                         {isLoading ? (
@@ -62,6 +67,22 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ entry, onGenerate, isLoading,
                     </button>
                 </div>
             </div>
+
+             {!apiKey && (
+                <div className="bg-brand-bg border-l-4 border-brand-secondary p-4 rounded-r-lg text-center animate-fade-in">
+                    <div className="flex justify-center items-center gap-2 mb-2">
+                        <KeyIcon className="w-5 h-5 text-brand-secondary" />
+                        <p className="font-semibold text-brand-text-primary">Enable AI Features</p>
+                    </div>
+                    <p className="text-sm text-brand-text-secondary mb-3">Set your Gemini API Key to unlock insights and suggestions for your journal entries.</p>
+                    <button 
+                        onClick={onSetApiKey} 
+                        className="text-sm bg-brand-secondary text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-secondary focus:ring-offset-brand-bg"
+                    >
+                        Set API Key
+                    </button>
+                </div>
+            )}
 
             <div className="flex-grow space-y-6 overflow-y-auto pr-2 -mr-2">
                 {!hasInsights && !isLoading && (
@@ -103,32 +124,32 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ entry, onGenerate, isLoading,
                     <div className="space-y-6 animate-fade-in">
                         <div className="p-4 bg-brand-bg rounded-lg">
                             <h3 className="italic text-brand-text-primary mb-2">Summary</h3>
-                            <p className="text-brand-text-secondary leading-relaxed">{summary}</p>
+                            <p className="text-brand-text-secondary leading-relaxed">{entry.summary}</p>
                         </div>
 
-                        {positive_aspects && positive_aspects.length > 0 && (
+                        {entry.positive_aspects && entry.positive_aspects.length > 0 && (
                             <div className="p-4 bg-brand-bg rounded-lg">
                                 <h3 className="italic text-brand-text-primary mb-2">Positive Aspects</h3>
                                 <ul className="list-disc list-inside space-y-1 text-brand-text-secondary">
-                                    {positive_aspects.map((item, index) => <li key={index}>{item}</li>)}
+                                    {entry.positive_aspects.map((item, index) => <li key={index}>{item}</li>)}
                                 </ul>
                             </div>
                         )}
 
-                        {areas_for_reflection && areas_for_reflection.length > 0 && (
+                        {entry.areas_for_reflection && entry.areas_for_reflection.length > 0 && (
                             <div className="p-4 bg-brand-bg rounded-lg">
                                 <h3 className="italic text-brand-text-primary mb-2">Areas for Reflection</h3>
                                 <ul className="list-disc list-inside space-y-1 text-brand-text-secondary">
-                                    {areas_for_reflection.map((item, index) => <li key={index}>{item}</li>)}
+                                    {entry.areas_for_reflection.map((item, index) => <li key={index}>{item}</li>)}
                                 </ul>
                             </div>
                         )}
 
-                        {key_takeaways && key_takeaways.length > 0 && (
+                        {entry.key_takeaways && entry.key_takeaways.length > 0 && (
                             <div className="p-4 bg-brand-bg rounded-lg">
                                 <h3 className="italic text-brand-text-primary mb-2">Key Takeaways</h3>
                                 <ul className="list-disc list-inside space-y-1 text-brand-text-secondary">
-                                    {key_takeaways.map((item, index) => <li key={index}>{item}</li>)}
+                                    {entry.key_takeaways.map((item, index) => <li key={index}>{item}</li>)}
                                 </ul>
                             </div>
                         )}
