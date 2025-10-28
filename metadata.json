@@ -1,0 +1,5 @@
+{
+  "name": "My Day",
+  "description": "A daily journaling application powered by Gemini for intelligent insights. Track your mood, attach images, and get AI-generated summaries, sentiment analysis, and keywords for your entries.",
+  "requestFramePermissions": []
+}
